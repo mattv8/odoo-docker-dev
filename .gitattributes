@@ -1,0 +1,7 @@
+# Treat all files as text with LF endings
+* text=auto eol=lf
+
+# Leave binaries untouched
+*.png binary
+*.jpg binary
+*.gif binary

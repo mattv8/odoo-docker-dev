@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="impersonate_user.impersonate_user_button" owl="1">
+        <t t-if="!props.record.data.is_company and props.record.data.email and props.record.data.portal_access == 'active'">
+            <button class="btn btn-primary"
+                style="font-size:10px; line-height:1; padding:3px 2px;"
+                t-att-id="'portal_impersonate_button_' + props.record.id"
+                t-on-click="onClick">
+                Impersonate User
+            </button>
+        </t>
+    </t>
+</templates>

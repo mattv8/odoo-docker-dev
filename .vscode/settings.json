@@ -1,0 +1,26 @@
+{
+  "python.analysis.extraPaths": [
+    "../odoo",
+    "../odoo-e"
+  ],
+  "python.autoComplete.extraPaths": [
+    "../odoo",
+    "../odoo/addons",
+    "../odoo/odoo/addons",
+    "../odoo-e",
+  ],
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "off",
+    "strings": "on"
+  },
+  "python.languageServer": "None",
+  "pylint.args": [
+    "--max-line-length=140",
+    "--logging-format-style=new",
+    "--disable=E0401,C0115,W1203"
+  ],
+  "autopep8.args": [
+    "--max-line-length=140",
+  ]
+}

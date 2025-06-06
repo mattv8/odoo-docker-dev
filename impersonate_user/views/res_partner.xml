@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_res_partner_kanban_inherit" model="ir.ui.view">
+        <field name="name">res.partner.kanban.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.res_partner_kanban_view" />
+        <field name="arch" type="xml">
+            <!-- Fields -->
+            <xpath expr="//kanban" position="inside">
+                <field name="portal_access" />
+            </xpath>
+
+            <!-- Portal Access Button Contacts Kanban -->
+            <xpath expr="//t[@t-name='kanban-box']//div[hasclass('oe_kanban_bottom_right')]" position="inside">
+                <!-- Impersonate User Button -->
+                <widget name="impersonate_user_button" class="d-flex align-items-center" groups="sales_team.group_sale_salesman,sales_team.group_sale_manager"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <!-- Fields -->
+            <xpath expr="//kanban" position="inside">
+                <field name="portal_access" />
+            </xpath>
+
+            <xpath expr="//t[@t-name='kanban-box']/div" position="inside">
+                <!-- Impersonate User Button -->
+                <widget name="impersonate_user_button" class="text-right d-flex align-items-center justify-content-end mt-1" groups="sales_team.group_sale_salesman,sales_team.group_sale_manager"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

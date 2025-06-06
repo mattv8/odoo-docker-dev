@@ -1,0 +1,106 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Restart Odoo Container",
+      "type": "shell",
+      "command": "if sudo docker exec odoo-server ps aux | grep -c 'odoo-bin' | awk '{exit $0 > 2 ? 0 : 1}'; then echo -e '\\033[31mWARNING: Restarting will also kill any running tests/shell sessions!!\\nUse `sudo docker exec -it odoo-server odoo restart` instead.\\033[0m' && exit 1; else sudo docker compose restart odoo; fi",
+      "problemMatcher": [],
+      "group": { "isDefault": true, "kind": "build" },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "never", "echo": true }
+    },
+    {
+      "label": "Start Docker Stack",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/.vscode/scripts/install.sh --no-build && sudo docker compose up",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "presentation": { "echo": true, "reveal": "always", "focus": true, "panel": "new" },
+      "problemMatcher": {
+        "owner": "odoo",
+        "fileLocation": "autoDetect",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Starting Odoo.*$",
+          "endsPattern": "^.*(odoo\\.modules\\.registry: Registry loaded in (\\d+(\\.\\d+)?)s|Container odoo-server\\s*Running).*$"
+        },
+        "pattern": [
+          { "regexp": "^.*File \\\"([^\\\"]|.*)\\\", line (\\d+).*", "file": 1, "line": 2 },
+          { "regexp": "^.*WARNING (.*)$", "message": 1 },
+          { "regexp": "^.*DEBUG (.*)$", "message": 1 }
+        ]
+      }
+    },
+    {
+      "label": "Run All Odoo Tests",
+      "type": "shell",
+      "command": "sudo docker exec -it odoo-server odoo test",
+      "problemMatcher": [],
+      "group": { "kind": "test", "isDefault": true },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Start Odoo Shell",
+      "type": "shell",
+      "command": "sudo docker exec -it odoo-server odoo shell",
+      "problemMatcher": {
+        "owner": "odoo",
+        "fileLocation": "autoDetect",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Entering Odoo shell\\.\\.\\.$",
+          "endsPattern": "^.*odoo\\.modules\\.registry: Registry loaded in (\\d+(\\.\\d+)?)s\\s*$"
+        },
+        "pattern": [
+          { "regexp": "^.*File \"([^\"]+)\", line (\\d+).*", "file": 1, "line": 2 },
+          { "regexp": "^.*ERROR (.*)$", "message": 1 },
+          { "regexp": "^.*WARNING (.*)$", "message": 1 }
+        ]
+      },
+      "isBackground": true,
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "Restart Odoo Server",
+      "type": "shell",
+      "command": "sudo docker exec -it odoo-server odoo restart",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "odoo",
+        "fileLocation": "autoDetect",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Starting Odoo.*$",
+          "endsPattern": "^.*(odoo\\.modules\\.registry: Registry loaded in (\\d+(\\.\\d+)?)s|Container odoo-server\\s*Running).*$"
+        },
+        "pattern": [
+          { "regexp": "^.*File \\\"([^\\\"]|.*)\\\", line (\\d+).*", "file": 1, "line": 2 },
+          { "regexp": "^.*WARNING (.*)$", "message": 1 },
+          { "regexp": "^.*DEBUG (.*)$", "message": 1 }
+        ]
+      },
+      "group": { "kind": "build" },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "echo": true, "reveal": "always", "focus": true, "panel": "new" }
+    },
+    {
+      "label": "Scaffold New Module",
+      "type": "shell",
+      "command": "sudo docker exec -it odoo-server odoo scaffold ${input:moduleName}",
+      "problemMatcher": [],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "moduleName",
+      "description": "Enter the name of the new module",
+      "default": "my_custom_module",
+      "type": "promptString"
+    }
+  ]
+}

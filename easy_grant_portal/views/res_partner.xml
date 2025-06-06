@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_res_partner_kanban_inherit" model="ir.ui.view">
+        <field name="name">res.partner.kanban.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.res_partner_kanban_view" />
+        <field name="arch" type="xml">
+            <!-- Fields -->
+            <xpath expr="//kanban" position="inside">
+                <field name="portal_access" />
+            </xpath>
+
+            <!-- Portal Access Button Contacts Kanban -->
+            <xpath expr="//t[@t-name='kanban-box']//div[hasclass('oe_kanban_bottom_right')]" position="inside">
+                <t t-if="!record.is_company.raw_value and record.email.raw_value">
+                    <button type="object"
+                        name="toggle_portal_access"
+                        groups="base.group_user"
+                        t-att-class="'btn portal-access-btn ' + (record.portal_access.raw_value == 'active' ? 'btn-danger' : (['revoked', 'none'].includes(record.portal_access.raw_value) ? 'btn-primary' : 'btn-warning'))"
+                        t-att-id="'portal_access_button_' + record.id.raw_value">
+                        <t t-if="record.portal_access.raw_value == 'active'">Revoke Portal Access</t>
+                        <t t-elif="record.portal_access.raw_value == 'revoked'">Grant Portal Access Again</t>
+                        <t t-elif="record.portal_access.raw_value == 'none'">Grant Portal Access</t>
+                        <t t-else="">Unknown Portal Access Status</t>
+                    </button>
+                </t>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <!-- Fields -->
+            <xpath expr="//kanban" position="inside">
+                <field name="portal_access" />
+            </xpath>
+
+            <!-- Portal Access Button within Company -->
+            <xpath expr="//t[@t-name='kanban-box']/div" position="inside">
+                <t t-if="!record.is_company.raw_value and record.email.raw_value">
+                    <div class="o-kanban-button text-right">
+                        <button type="object"
+                            name="toggle_portal_access"
+                            groups="base.group_user"
+                            t-att-class="'btn portal-access-btn ' + (record.portal_access.raw_value == 'active' ? 'btn-danger' : (['revoked', 'none'].includes(record.portal_access.raw_value) ? 'btn-primary' : 'btn-warning'))"
+                            t-att-id="'portal_access_button_' + record.id.raw_value">
+                            <t t-if="record.portal_access.raw_value == 'active'">Revoke Portal Access</t>
+                            <t t-elif="record.portal_access.raw_value == 'revoked'">Grant Portal Access Again</t>
+                            <t t-elif="record.portal_access.raw_value == 'none'">Grant Portal Access</t>
+                            <t t-else="">Unknown Portal Access Status</t>
+                        </button>
+                    </div>
+                </t>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Grant Portal Access Confirmation Modal -->
+    <record id="confirmation_modal" model="ir.ui.view">
+        <field name="name">easy_grant_portal.confirmation_modal.form</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet class="py-0">
+                    <!-- Fields -->
+                    <field name="portal_access" invisible="1"/>
+                    <field name="portal_revoke_note" invisible="1"/>
+
+                    <label for="email" string="Granting portal access to:" invisible="portal_access == 'active'"/>
+                    <label for="email" string="Revoking portal access from:" invisible="portal_access != 'active'"/>
+                    <strong><field name="email" readonly="1"/></strong>
+                    <br invisible="not complete_name"/>
+                    <field name="complete_name" readonly="1"/>
+                    <br/>
+
+                    <!-- Editable revocation note: Displayed when revoking access -->
+                    <div name="portal_revoke_note_div" invisible="portal_access != 'active'">
+                        <label for="portal_revoke_note" string="Reason for Revocation"/>
+                        <field name="portal_revoke_note" widget="text" placeholder="Please enter the reason for revoking portal access"/>
+                    </div>
+                </sheet>
+                <footer class="d-flex justify-content-between">
+                    <!-- Previous revocation note: Displayed when partner does not currently have portal access but has had it before -->
+                    <div class="alert alert-warning" role="alert" name="revocation_note_display" invisible="portal_access == 'active' or not portal_revoke_note">
+                        <strong><label for="portal_revoke_note" string="Access was previously revoked for this email because:"/></strong>
+                        <field name="portal_revoke_note" readonly="1"/>
+                    </div>
+
+                    <button string="Cancel" class="btn btn-danger flex-fill me-1" special="cancel"/>
+
+                    <!-- Confirm Grant Portal Access Buttons -->
+                    <button string="Grant" class="btn btn-success flex-fill ms-1" type="object"
+                        invisible="portal_access == 'active' or portal_revoke_note"
+                        name="toggle_portal_access" context="{'confirmed': True}"/>
+                    <button string="Grant" class="btn btn-warning flex-fill ms-1" type="object"
+                        invisible="portal_access == 'active' or not portal_revoke_note"
+                        name="toggle_portal_access" context="{'confirmed': True}"/>
+
+                    <!-- Revoke Portal Access Button -->
+                    <button string="Revoke" class="btn btn-warning flex-fill ms-1" type="object"
+                        invisible="portal_access != 'active'" data-role="confirm-portal-revoke-button"
+                        name="toggle_portal_access" context="{'confirmed': True}" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,137 @@
+services:
+  odoo:
+    container_name: odoo-server
+    build:
+      dockerfile: .vscode/docker/ubuntu.Dockerfile
+      additional_contexts:
+        odoo-src: "${ODOO_SRC_PATH}"
+        custom-modules: "${CUSTOM_MODULES_PATH:-.}"
+      args:
+        ODOO_SRC_PATH: "${ODOO_SRC_PATH}"
+        ODOO_E_MODULES_PATH: "${ODOO_E_MODULES_PATH}"
+        CUSTOM_MODULES: "${CUSTOM_MODULES_PATH:-.}"
+    env_file:
+      - .env
+    environment:
+      - LOG_LEVEL
+      - DB_USER
+      - DB_PASS
+      - DB_NAME
+      - SUPPRESS_FS_ERR
+      - ODOO_SRC_PATH
+      - ODOO_E_MODULES_PATH
+    volumes:
+      - ${ODOO_SRC_PATH}:/odoo:ro
+      - ${ODOO_E_MODULES_PATH}:/odoo-e:ro
+      - .:/custom-odoo:ro
+      - ./.logs:/home/odoo/.logs
+      - odoo-data:/home/odoo/.odoo-data
+    ports:
+      - "${ODOO_PORT}:8069" # Odoo
+      - "5678:5678" # debugpy
+    networks:
+      - odoo-network
+    depends_on:
+      - postgres
+      - pgadmin
+    tty: true
+
+  postgres:
+    container_name: odoo-postgres
+    image: postgres:latest
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_USER=${DB_USER}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - DB_TIMEOUT
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/pgdata
+      - .vscode/docker/postgresql.conf:/postgresql.conf
+    ports:
+      - "${DB_PORT}:5432"
+    configs:
+      - source: pg-odoo.conf
+        target: /etc/postgresql/pg-odoo.conf
+    command: postgres -c config_file=/etc/postgresql/pg-odoo.conf
+    networks:
+      - odoo-network
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: odoo-pgadmin
+    image: dpage/pgadmin4
+    user: root # Necessary to generate /pgpass and /servers.json configs
+    env_file:
+      - .env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com # Dummy email - don't change this
+      - PGADMIN_DEFAULT_PASSWORD=${DB_PASS}
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False # Auto-login
+    ports:
+      - "${PGADMIN_PORT}:80"
+    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
+    depends_on:
+      - postgres
+    networks:
+      - odoo-network
+    restart: unless-stopped
+    configs:
+      - source: servers.json
+        target: /pgadmin4/servers.json
+      - source: pgpass
+        target: /pgpass
+
+  mailpit:
+    container_name: odoo-mailpit
+    image: axllent/mailpit
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MP_MAX_MESSAGES=5000
+      - MP_DATABASE=/data/mailpit.db
+      - MP_SMTP_AUTH_ACCEPT_ANY=1
+      - MP_SMTP_AUTH_ALLOW_INSECURE=1
+    volumes:
+      - mailpit-data:/data
+    ports:
+      - "${MAILPIT_PORT}:8025"
+      - 1025:1025
+    networks:
+      - odoo-network
+
+networks:
+  odoo-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  odoo-data:
+  mailpit-data:
+
+configs:
+  pgpass:
+    content: "postgres:5432:${DB_NAME}:${DB_USER}:${DB_PASS}"
+  servers.json:
+    content: |
+      {"Servers": {"1": {
+        "Group": "Servers",
+        "Name": "Odoo Database Local Docker",
+        "Host": "postgres",
+        "Port": 5432,
+        "MaintenanceDB": "postgres",
+        "Username": "${DB_USER}",
+        "PassFile": "/pgpass",
+        "SSLMode": "prefer"
+      }}}
+  pg-odoo.conf:
+    content: |
+      include '/var/lib/postgresql/data/pgdata/postgresql.conf'
+      lock_timeout = ${DB_TIMEOUT}
+      statement_timeout = ${DB_TIMEOUT}
+      idle_in_transaction_session_timeout = ${DB_TIMEOUT}
+      include '/postgresql.conf'

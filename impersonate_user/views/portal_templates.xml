@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Impersonation Banner -->
+    <template id="impersonation_header_home" inherit_id="web.layout" name="Banner Home"
+        active="True">
+        <xpath expr="//head" position="after">
+            <t t-if="request.session.get('impersonation_origin_id') and request.session.get('impersonation_origin_id') != request.env.user.id and not request.env.user._is_public()">
+                <div class="d-flex align-items-center justify-content-between"
+                    style="background-color: #dc3545; padding: 4px 16px; font-size: 10pt;">
+                    <div class="flex-grow-1 text-center text-white">
+                        Viewing as: <strong t-out="request.env.user.name" />
+                    </div>
+                    <div>
+                        <a href="/switch/back" class="btn btn-light py-0" style="font-size: 10pt;">
+                            <i class="fa fa-sign-out me-1" />Return to Your Account</a>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>

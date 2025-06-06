@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "mechatroner.rainbow-csv",
+    "ms-python.autopep8",
+    "ms-python.debugpy",
+    "ms-python.pylint",
+    "DotJoshJohnson.xml",
+    "jigar-patel.OdooSnippets",
+    "trinhanhngoc.vscode-odoo"
+  ]
+}
