@@ -117,10 +117,35 @@ CMD_BASE="-r ${DB_USER} -w ${DB_PASS} --log-level=${LOG_LEVEL} \
 ###############################################
 if [ "$1" = "shell" ]; then
   echo "Entering Odoo shell..."
-  FINAL_CMD="${PYTHON_BIN} ${ODOO_BIN} shell ${CMD_BASE} -p ${PORT} -d ${DB_NAME} \
-    --gevent-port=${GEVENT_PORT} ${MODULES} ${@:2}"
-  printf "%s\nCommand: %s\n%s\n" "$SEP" "$(echo "${FINAL_CMD}" | sed -e 's/[[:space:]]\+/ /g')" "$SEP"
-  exec bash -c "${FINAL_CMD}"
+
+  # Simple check for --exec flag
+  if [ "$2" = "--exec" ] && [ -n "$3" ]; then
+    # Execute command mode using separate script
+    EXEC_CMD="$3"
+
+    # Remove leading and trailing newlines from the command
+    CLEAN_CMD=$(echo "$EXEC_CMD" | sed '/./,$!d' | sed ':a;N;$!ba;s/\n*$//')
+
+    printf "%s\nExecuting command in Odoo shell:\n%s\n%s\n" "$SEP" "$CLEAN_CMD" "$SEP"
+
+    # Use the separate Python script for command execution
+    SHELL_EXEC_SCRIPT="/usr/local/bin/odoo-shell-exec.py"
+
+    # Export the command as an environment variable to safely escape it
+    export ODOO_EXEC_COMMAND="$EXEC_CMD"
+
+    # Run as odoo user: use environment variable for the command
+    FINAL_CMD="${RUNAS} \"python3 '$SHELL_EXEC_SCRIPT' --python-bin='$PYTHON_BIN' --odoo-bin='$ODOO_BIN' --db-user='$DB_USER' --db-pass='$DB_PASS' --db-name='$DB_NAME' --log-level='$LOG_LEVEL' --data-dir='$DATA_DIR' --addons-path='$ADDONS' --modules='$MODULES' --command=\\\"\\\$ODOO_EXEC_COMMAND\\\"\""
+    exec bash -c "$FINAL_CMD"
+  else
+    # Interactive shell mode: shift past 'shell' and use remaining args
+    shift
+
+    FINAL_CMD="${PYTHON_BIN} ${ODOO_BIN} shell ${CMD_BASE} -p ${PORT} -d ${DB_NAME} \
+      --gevent-port=${GEVENT_PORT} ${MODULES} $@"
+    printf "%s\nCommand: %s\n%s\n" "$SEP" "$(echo "${FINAL_CMD}" | sed -e 's/[[:space:]]\+/ /g')" "$SEP"
+    exec bash -c "${FINAL_CMD}"
+  fi
   exit 0
 
 ###############################################

@@ -71,9 +71,11 @@ RUN chown -R odoo:odoo ${ODOO_OWNED_PATHS} \
 # Copy Scripts
 # -----------------------------------------------------------------------------
 COPY --from=custom-modules .vscode/scripts/entrypoint.sh ${USER_BIN}/odoo
+COPY --from=custom-modules .vscode/scripts/odoo-shell-exec.py ${USER_BIN}/odoo-shell-exec.py
 COPY --from=custom-modules /requirements.txt /tmp/custom-requirements.txt
 COPY --from=odoo-src /requirements.txt /tmp/odoo-requirements.txt
 RUN dos2unix ${USER_BIN}/odoo && chmod +x ${USER_BIN}/odoo
+RUN dos2unix ${USER_BIN}/odoo-shell-exec.py && chmod +x ${USER_BIN}/odoo-shell-exec.py
 
 # -----------------------------------------------------------------------------
 # Python Dependencies

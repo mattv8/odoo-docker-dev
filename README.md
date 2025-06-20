@@ -120,6 +120,18 @@ An `entrypoint.sh` (located at `.vscode/scripts/entrypoint.sh` which is copied t
 
     ```bash
     sudo docker exec -it odoo-server odoo shell
+
+    # Or run a long command:
+    sudo docker exec -it odoo-server odoo shell --exec "
+    env = self.env
+    # Find a product tag from demo data
+    tag = env['product.tag'].search([], limit=1)
+    if tag:
+        print('First product tag name:', repr(tag.name))
+        print('Tag name type:', type(tag.name))
+    else:
+        print('No product tags found')
+    "
     ```
 
 - **Testing Mode**
