@@ -9,88 +9,6 @@ import subprocess
 import argparse
 import os
 import re
-import threading
-
-
-def filter_odoo_output(output_lines, command_started_event):
-    """
-    Filter Odoo shell output to suppress initialization messages.
-    Only show command results and errors.
-    """
-    filtered_lines = []
-    command_started = False
-    in_shell_banner = True
-
-    # Patterns to identify Odoo initialization messages to suppress
-    suppress_patterns = [
-        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \d+ INFO',  # INFO log lines with timestamp
-        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \d+ WARNING',  # WARNING log lines with timestamp
-        r'^/.*\.py:\d+: UserWarning:',  # Python warnings
-        r'^\s*import pkg_resources',  # Import warnings
-        r'^\s*The pkg_resources package',  # Package deprecation warnings
-        r'^profiling:/tmp/.*\.gcda:Cannot open',  # Profiling errors
-        r'^profiling:.*Cannot open',  # General profiling errors
-    ]
-
-    # Patterns that indicate command execution area (keep these)
-    command_area_patterns = [
-        r'^In \[\d+\]:',  # IPython input prompt
-        r'^>>>',  # Python prompt
-        r'^env:',  # Environment variable display
-        r'^odoo:',  # Odoo module display
-        r'^openerp:',  # OpenERP alias display
-        r'^self:',  # Self object display
-    ]
-
-    # Patterns that indicate shell is ready (end of initialization)
-    shell_ready_patterns = [
-        r'^Python \d+\.\d+\.\d+',  # Python version line
-        r'^IPython.*--',  # IPython version line
-        r'^Tip:',  # IPython tip
-    ]
-
-    # Patterns that indicate errors we should always show
-    error_patterns = [
-        r'^ERROR',
-        r'^Traceback',
-        r'^  File',
-        r'^\w*Error:',
-        r'^\w*Exception:',
-    ]
-
-    for line in output_lines:
-        # Always show error messages
-        if any(re.match(pattern, line) for pattern in error_patterns):
-            filtered_lines.append(line)
-            continue
-
-        # Check if we've reached the shell ready area
-        if in_shell_banner:
-            if any(re.match(pattern, line) for pattern in shell_ready_patterns):
-                # We're at the shell banner area, start showing output
-                in_shell_banner = False
-                filtered_lines.append(line)
-                continue
-            # Still in initialization, suppress logs but show warnings/errors
-            if not any(re.match(pattern, line) for pattern in suppress_patterns):
-                # If it's not a suppressed pattern, show it (could be important)
-                if line.strip():  # Don't show empty lines during init
-                    filtered_lines.append(line)
-            continue
-
-        # Check if command execution has started
-        if not command_started:
-            if any(re.match(pattern, line) for pattern in command_area_patterns):
-                command_started = True
-                command_started_event.set()
-                filtered_lines.append(line)
-                continue
-
-        # After shell is ready, show everything except suppressed patterns
-        if not any(re.match(pattern, line) for pattern in suppress_patterns):
-            filtered_lines.append(line)
-
-    return filtered_lines
 
 
 def main():
@@ -117,13 +35,12 @@ def main():
             print("Error: No command provided via --command or ODOO_EXEC_COMMAND environment variable", file=sys.stderr)
             sys.exit(1)
 
-    # Build the Odoo shell command with quieter log level for initialization
-    log_level = 'error' if not args.verbose else args.log_level
+    # Build the Odoo shell command
     shell_cmd = [
         args.python_bin, args.odoo_bin, 'shell',
         '-r', args.db_user,
         '-w', args.db_pass,
-        '--log-level=' + log_level,
+        '--log-level=' + args.log_level,
         '--db_host=odoo-postgres',
         '--db_port=5432',
         '--data-dir=' + args.data_dir,
@@ -156,37 +73,87 @@ def main():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,  # Line buffered
+            bufsize=0,  # Unbuffered for immediate output
             universal_newlines=True,
             env=env  # Use cleaned environment
         )
-
         # Send the command followed by exit
         full_cmd = command + '\nexit()\n'
         proc.stdin.write(full_cmd)
         proc.stdin.flush()
         proc.stdin.close()
 
-        # Read output line by line
-        output_lines = []
-        for line in proc.stdout:
-            output_lines.append(line.rstrip('\n'))
+        # Process output in real-time
+        if args.verbose:
+            # Show all output in verbose mode
+            for line in proc.stdout:
+                print(line.rstrip('\n'))
+        else:
+            # Filter output in real-time
+            command_started = False
+            in_shell_banner = True
+
+            for line in proc.stdout:
+                line = line.rstrip('\n')
+
+                # Always show error messages immediately
+                if any(re.match(pattern, line) for pattern in [
+                    r'^ERROR', r'^Traceback', r'^  File', r'^\w*Error:', r'^\w*Exception:'
+                ]):
+                    print(line)
+                    continue
+
+                # Check if we've reached the shell ready area
+                if in_shell_banner:
+                    if any(re.match(pattern, line) for pattern in [
+                        r'^Python \d+\.\d+\.\d+', r'^IPython.*--', r'^Tip:'
+                    ]):
+                        in_shell_banner = False
+                        print(line)
+                        continue
+                    # Still in initialization, suppress logs but show important messages
+                    if not any(re.match(pattern, line) for pattern in [
+                        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \d+ INFO',
+                        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \d+ WARNING',
+                        r'^/.*\.py:\d+: UserWarning:',
+                        r'^\s*import pkg_resources',
+                        r'^\s*The pkg_resources package',
+                        r'^profiling:/tmp/.*\.gcda:Cannot open',
+                        r'^profiling:.*Cannot open',
+                    ]):
+                        if line.strip():  # Don't show empty lines during init
+                            print(line)
+                    continue
+
+                # Check if command execution has started
+                if not command_started:
+                    if any(re.match(pattern, line) for pattern in [
+                        r'^In \[\d+\]:', r'^>>>', r'^env:', r'^odoo:', r'^openerp:', r'^self:'
+                    ]):
+                        command_started = True
+                        print(line)
+                        continue
+
+                # After command execution starts, show ALL output except profiling errors
+                if command_started:
+                    # Show everything (including INFO, WARNING, DEBUG, ERROR logs) except profiling errors
+                    if not any(re.match(pattern, line) for pattern in [
+                        r'^profiling:/tmp/.*\.gcda:Cannot open',
+                        r'^profiling:.*Cannot open',
+                    ]):
+                        print(line, flush=True)
+                else:
+                    # Before command starts, suppress initialization logs (INFO/WARNING) but keep errors
+                    if not any(re.match(pattern, line) for pattern in [
+                        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \d+ INFO',
+                        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \d+ WARNING',
+                        r'^profiling:/tmp/.*\.gcda:Cannot open',
+                        r'^profiling:.*Cannot open',
+                    ]):
+                        print(line)
 
         # Wait for completion
         return_code = proc.wait()
-
-        if args.verbose:
-            # Show all output in verbose mode
-            for line in output_lines:
-                print(line)
-        else:
-            # Filter output to show only command results
-            command_started_event = threading.Event()
-            filtered_lines = filter_odoo_output(output_lines, command_started_event)
-
-            # Print filtered output
-            for line in filtered_lines:
-                print(line)
 
         if return_code != 0:
             if not args.verbose:
