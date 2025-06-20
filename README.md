@@ -271,13 +271,13 @@ For more detailed information on Python debugging in VSCode, refer to the [offic
     To restore a database dump into your local PostgreSQL container:
     ```bash
     # Copy dump file to container (adjust source path as needed)
-    sudo docker cp /path/to/your_database.dump odoo-postgres:/tmp/
+    sudo docker cp /path/to/backup.dump odoo-postgres:/tmp/
 
     # Create the database inside the container, if it doesn't already exist
-    sudo docker exec odoo-postgres bash -c "createdb -U \"\$DB_USER\" \"your_database_name\""
+    sudo docker exec odoo-postgres bash -c "createdb -U \"\$DB_USER\" \"\$DB_NAME\""
 
-    # Restore the dump using credentials from the container's environment
-    sudo docker exec odoo-postgres bash -c "PGPASSWORD=\$DB_PASS pg_restore -U \$DB_USER --dbname=your_database_name /tmp/your_database.dump"
+    # Restore the dump using credentials from the container's environment (this also cleans db if it exists already)
+    sudo docker exec odoo-postgres bash -c "PGPASSWORD=\"\$DB_PASS\" pg_restore -c --if-exists -U \"\$DB_USER\" -d \"\$DB_NAME\" \"/tmp/backup.dump\""
 
     # ⚠️IMPORTANT⚠️: Be sure to neutralize the DB after restoring:
     sudo docker exec odoo-server odoo neutralize
@@ -289,8 +289,11 @@ For more detailed information on Python debugging in VSCode, refer to the [offic
     wslpath=$(wslpath "C:\Path\To\SQL.dump")
     sudo docker cp "$wslpath" odoo-postgres:/tmp/
 
-    # Then follow the same steps as above using:
-    # /tmp/$(basename "$wslpath") as the dump file path
+    # Then restore the dump using credentials from the container's environment (this also cleans db if it exists already):
+    sudo docker exec odoo-postgres bash -c "PGPASSWORD=\"\$DB_PASS\" pg_restore -c --if-exists -U \"\$DB_USER\" -d  \"\$DB_NAME\" \"/tmp/$(basename "$wslpath")\""
+
+    # ⚠️IMPORTANT⚠️: Be sure to neutralize the DB after restoring:
+    sudo docker exec odoo-server odoo neutralize
     ```
 
     To restore a dump for a staging environment using standard PostgreSQL commands:
