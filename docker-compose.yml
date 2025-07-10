@@ -20,6 +20,7 @@ services:
       - SUPPRESS_FS_ERR
       - ODOO_SRC_PATH
       - ODOO_E_MODULES_PATH
+      - INSTALL_THEME
     volumes:
       - ${ODOO_SRC_PATH}:/odoo:ro
       - ${ODOO_E_MODULES_PATH}:/odoo-e:ro
@@ -42,6 +43,9 @@ services:
     env_file:
       - .env
     environment:
+      - DB_USER
+      - DB_PASS
+      - DB_NAME
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_PASSWORD=${DB_PASS}
       - POSTGRES_USER=${DB_USER}

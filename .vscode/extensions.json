@@ -1,4 +1,5 @@
 {
+  // Please only put essential extensions here.
   "recommendations": [
     "mechatroner.rainbow-csv",
     "ms-python.autopep8",
@@ -6,6 +7,6 @@
     "ms-python.pylint",
     "DotJoshJohnson.xml",
     "jigar-patel.OdooSnippets",
-    "trinhanhngoc.vscode-odoo"
+    "trinhanhngoc.vscode-odoo",
   ]
 }
