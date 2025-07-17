@@ -2,7 +2,7 @@ services:
   odoo:
     container_name: odoo-server
     build:
-      dockerfile: .vscode/docker/ubuntu.Dockerfile
+      dockerfile: .dev-tools/docker/ubuntu.Dockerfile
       additional_contexts:
         odoo-src: "${ODOO_SRC_PATH}"
         custom-modules: "${CUSTOM_MODULES_PATH:-.}"
@@ -53,7 +53,7 @@ services:
       - DB_TIMEOUT
     volumes:
       - postgres-data:/var/lib/postgresql/data/pgdata
-      - .vscode/docker/postgresql.conf:/postgresql.conf
+      - .dev-tools/docker/postgresql.conf:/postgresql.conf
     ports:
       - "${DB_PORT}:5432"
     configs:
@@ -104,7 +104,6 @@ services:
       - mailpit-data:/data
     ports:
       - "${MAILPIT_PORT}:8025"
-      - 1025:1025
     networks:
       - odoo-network
 

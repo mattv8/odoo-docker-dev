@@ -3,6 +3,7 @@
   "tasks": [
     {
       "label": "Restart Odoo Container",
+      "detail": "Restart the Odoo Docker container (warns if processes are running)",
       "type": "shell",
       "command": "if sudo docker exec odoo-server ps aux | grep -c 'odoo-bin' | awk '{exit $0 > 2 ? 0 : 1}'; then echo -e '\\033[31mWARNING: Restarting will also kill any running tests/shell sessions!!\\nUse `sudo docker exec -it odoo-server odoo restart` instead.\\033[0m' && exit 1; else sudo docker compose restart odoo; fi",
       "problemMatcher": [],
@@ -12,11 +13,12 @@
     },
     {
       "label": "Start Docker Stack",
+      "detail": "Start all Docker containers (PostgreSQL, Odoo, pgAdmin, Mailpit)",
       "type": "shell",
-      "command": "bash ${workspaceFolder}/.vscode/scripts/install.sh --no-build && sudo docker compose up",
+      "command": "bash ${workspaceFolder}/.dev-tools/scripts/install.sh --no-build && sudo docker compose up",
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
-      "presentation": { "echo": true, "reveal": "always", "focus": true, "panel": "new" },
+      "presentation": { "echo": true, "reveal": "always", "focus": true, "panel": "dedicated", "clear": true },
       "problemMatcher": {
         "owner": "odoo",
         "fileLocation": "autoDetect",
@@ -34,6 +36,7 @@
     },
     {
       "label": "Run All Odoo Tests",
+      "detail": "Run all Odoo tests in a fresh temporary database",
       "type": "shell",
       "command": "sudo docker exec -it odoo-server odoo test",
       "problemMatcher": [],
@@ -43,6 +46,7 @@
     },
     {
       "label": "Start Odoo Shell",
+      "detail": "Start an interactive Odoo shell session for debugging and testing",
       "type": "shell",
       "command": "sudo docker exec -it odoo-server odoo shell",
       "problemMatcher": {
@@ -65,6 +69,7 @@
     },
     {
       "label": "Restart Odoo Server",
+      "detail": "Restart the Odoo server process without restarting the container",
       "type": "shell",
       "command": "sudo docker exec -it odoo-server odoo restart",
       "isBackground": true,
@@ -88,8 +93,18 @@
     },
     {
       "label": "Scaffold New Module",
+      "detail": "Create a new Odoo module with boilerplate code and structure",
       "type": "shell",
       "command": "sudo docker exec -it odoo-server odoo scaffold ${input:moduleName}",
+      "problemMatcher": [],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Add Subtree Module",
+      "detail": "Add a custom module repository as a Git subtree",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/.dev-tools/scripts/manage_subtrees.sh add ${input:subtreeModuleName} ${input:subtreeRepositoryUrl} ${input:subtreeBranch}",
       "problemMatcher": [],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" }
@@ -100,6 +115,24 @@
       "id": "moduleName",
       "description": "Enter the name of the new module",
       "default": "my_custom_module",
+      "type": "promptString"
+    },
+    {
+      "id": "subtreeModuleName",
+      "description": "Enter the module name (will be the directory name)",
+      "default": "my_custom_module",
+      "type": "promptString"
+    },
+    {
+      "id": "subtreeRepositoryUrl",
+      "description": "Enter the Git repository URL",
+      "default": "https://github.com/yourusername/my_custom_module.git",
+      "type": "promptString"
+    },
+    {
+      "id": "subtreeBranch",
+      "description": "Enter the branch name",
+      "default": "main",
       "type": "promptString"
     }
   ]

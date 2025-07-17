@@ -7,7 +7,7 @@ BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 NC='\033[0m' # No color
 
-docker_dir=".vscode/docker" # docker-compose.yml directory
+docker_dir=".dev-tools/docker" # docker-compose.yml directory
 env_dir="." # .env directory
 export USER_ID=$(id -u)
 export GROUP_ID=$(id -g)
@@ -111,5 +111,5 @@ check_docker_compose_installed
 
 if [ "$BUILD" = true ]; then
     echo -e "${BLUE}Building Docker containers...${NC}"
-    sudo docker compose -f .vscode/docker/docker-compose.yml build
+    sudo docker compose -f .dev-tools/docker/docker-compose.yml build
 fi

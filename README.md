@@ -1,11 +1,31 @@
 # Odoo Development Environment
 
-This project includes a Docker-based development environment. All installation, build, and runtime tasks are handled through Docker and VSCode tasks.
+A full Docker-based development framework for Odoo Developers that allows custom modules to be managed in separate repositories while integrating them into a single environment.
+
+## How This Framework Works
+
+This framework is designed to solve a common problem: **how to develop custom Odoo modules while still receiving updates from a shared development framework**. Here's how it works:
+
+1. **Fork or Clone This Repository**: Start with this repository as your development environment
+2. **Add Your Custom Modules**: Use Git subtrees to integrate your custom modules directly into the root directory
+3. **Develop Normally**: Work on your modules as if they were part of the main project
+4. **Stay Updated**: Pull framework updates without affecting your custom modules
+5. **Maintain Separation**: Push your module changes back to their individual repositories
+
+All installation, build, and runtime tasks are handled through Docker and VSCode tasks, making setup and daily development a little less toilsome.
+
+I've also included a couple of "bonus" modules to serve as an example:
+- **`easy_grant_portal`** - Demonstrates portal functionality and partner management
+- **`impersonate_user`** - Shows advanced user session management and security patterns
+- **`odoo_base`** - Provides common utilities and abstract models for other modules
+
+These modules can be used as-is or serve as examples for your own custom modules.
 
 ---
 
 ## Table of Contents
 
+- [Managing Custom Modules with Git Subtrees](#managing-custom-modules-with-git-subtrees)
 - [Installation & Setup](#installation--setup)
 - [VSCode Tasks](#vscode-tasks)
 - [Accessing the Containers](#accessing-the-containers)
@@ -17,6 +37,86 @@ This project includes a Docker-based development environment. All installation, 
 - [PostgreSQL Setup & Maintenance](#postgresql-setup--maintenance)
 - [Additional Notes](#additional-notes)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Managing Custom Modules with Git Subtrees
+
+This framework supports Git subtrees for managing custom modules, allowing you to maintain your modules in separate repositories while keeping them integrated in the root directory. Git subtrees are easier to work with than submodules and don't require special commands for cloning or building.
+
+### Initial Setup for New Custom Modules
+
+1. **Create Your Custom Module Repository**:
+   Create a new repository for your custom module on GitHub/GitLab:
+   ```bash
+   # Example: Create a new repository called 'my_custom_module'
+   ```
+
+2. **Add Your Module as a Subtree**:
+   Add your custom module repository as a subtree in the root directory:
+   ```bash
+   git subtree add --prefix=my_custom_module https://github.com/yourusername/my_custom_module.git main --squash
+   ```
+
+3. **Develop Your Module**:
+   Work on your module files directly in the `my_custom_module/` directory as normal.
+
+### Working with Subtrees
+
+- **Push Changes to Your Module Repository**:
+   ```bash
+   git subtree push --prefix=my_custom_module https://github.com/yourusername/my_custom_module.git main
+   ```
+
+- **Pull Updates from Your Module Repository**:
+   ```bash
+   git subtree pull --prefix=my_custom_module https://github.com/yourusername/my_custom_module.git main --squash
+   ```
+
+- **Pull Framework Updates**:
+   ```bash
+   git pull origin main
+   ```
+
+### Automation Script
+
+Use the provided script to manage multiple subtrees easily:
+
+```bash
+# List all configured subtrees
+bash .dev-tools/scripts/manage_subtrees.sh list
+
+# Add a new subtree
+bash .dev-tools/scripts/manage_subtrees.sh add my_new_module https://github.com/yourusername/my_new_module.git
+
+# Push changes to all subtrees
+bash .dev-tools/scripts/manage_subtrees.sh push
+
+# Pull updates from all subtrees
+bash .dev-tools/scripts/manage_subtrees.sh pull
+```
+
+### Configuration File
+
+The script uses a `.subtrees` configuration file to manage multiple repositories. The format is:
+
+```
+module_name|repository_url|branch
+```
+
+Example `.subtrees` file:
+```
+my_sales_module|https://github.com/yourusername/my_sales_module.git|main
+my_inventory_module|https://github.com/yourusername/my_inventory_module.git|develop
+```
+
+### Advantages of Git Subtrees
+
+- **No Special Clone Process**: Anyone can clone your repository normally
+- **Simpler Workflow**: No need to understand submodule commands
+- **Better CI/CD Support**: Works seamlessly with build systems
+- **Full Git History**: Subtree commits become part of your main repository
+- **Root Directory Modules**: Modules live directly in the root as desired
 
 ---
 
@@ -51,11 +151,11 @@ This project includes a Docker-based development environment. All installation, 
         git clone https://github.com/mattv8/odoo-docker-dev.git custom-modules
         ```
 
-2. **Run the Install Script** The install script located at `.vscode/scripts/install.sh` sets up your environment, installs Docker, Docker Compose, and creates a `.env` file. **Run this script first**:
+2. **Run the Install Script** The install script located at `.dev-tools/scripts/install.sh` sets up your environment, installs Docker, Docker Compose, and creates a `.env` file. **Run this script first**:
 
     ```bash
     cd <your_project_root>
-    bash .vscode/scripts/install.sh
+    bash .dev-tools/scripts/install.sh
     ```
 
     This script will:
@@ -104,7 +204,7 @@ These ports are defined in your environment configuration (e.g., in your `.env` 
 Make sure these ports are correctly mapped in your Docker Compose configuration so that they are accessible from your host machine.
 
 ## Entrypoint Script Usage
-An `entrypoint.sh` (located at `.vscode/scripts/entrypoint.sh` which is copied to `/usr/local/bin/odoo` in the Docker image) dispatches commands based on the first argument passed when executing `odoo` in the container.
+An `entrypoint.sh` (located at `.dev-tools/scripts/entrypoint.sh` which is copied to `/usr/local/bin/odoo` in the Docker image) dispatches commands based on the first argument passed when executing `odoo` in the container.
 
 ### General Behavior
 
@@ -208,13 +308,13 @@ You can CLI upgrade or install modules by passing either the `-u` (upgrade) or `
 
 - **Using `.installed_modules` File**
 
-    You can create a `.installed_modules` file in the root of your custom modules directory to specify which modules should be automatically installed when the container starts. Each module name should be on a new line.
+    You can create a `.installed_modules` file in the root of your custom modules directory to specify which modules should be automatically upgraded when the container starts. Each module name should be on a new line.
 
     *Example .installed_modules file:*
     ```text
-    custom_web
-    custom_sale
-    custom_crm
+    odoo_base
+    impersonate_user
+    easy_grant_portal
     # This is a comment
     custom_accounting
     ```
@@ -243,7 +343,7 @@ For more detailed information on Python debugging in VSCode, refer to the [offic
 
 - **Tuning the server**
 
-    You can override any PostgreSQL setting by editing  the file `.vscode/docker/postgresql.conf`. Adjust your parameters (e.g. `max_connections`, `work_mem`, etc.) and then restart the `postgres` container with:
+    You can override any PostgreSQL setting by editing  the file `.dev-tools/docker/postgresql.conf`. Adjust your parameters (e.g. `max_connections`, `work_mem`, etc.) and then restart the `postgres` container with:
     ```bash
     sudo docker restart odoo-postgres
     ```
@@ -351,6 +451,6 @@ For more detailed information on Python debugging in VSCode, refer to the [offic
     When using the scaffold command (`scaffold`), ensure the `/custom-odoo` directory is writable by the `odoo` user inside the container. All scaffolded modules are automatically created in this directory.
 
 - **PostgreSQL Checkpoints / Timeouts**
-    If you encounter frequent checkpoints or idle transaction timeouts during database restore, consider increasing `max_wal_size` in `.vscode/docker/postgresql.conf`.
+    If you encounter frequent checkpoints or idle transaction timeouts during database restore, consider increasing `max_wal_size` in `.dev-tools/docker/postgresql.conf`.
 
     > *Note: Use caution when increasing `DB_TIMEOUT` in `.env` as that is set to match production and shouldn't need to be increased.*

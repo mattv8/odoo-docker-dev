@@ -1,0 +1,9 @@
+# Git Subtrees Configuration
+# Format: module_name|repository_url|branch
+# Example:
+# my_custom_module|https://github.com/yourusername/my_custom_module.git|main
+# another_module|https://github.com/yourusername/another_module.git|develop
+
+# Uncomment and modify the lines below to add your custom modules:
+# my_sales_module|https://github.com/yourusername/my_sales_module.git|main
+# my_inventory_module|https://github.com/yourusername/my_inventory_module.git|main
