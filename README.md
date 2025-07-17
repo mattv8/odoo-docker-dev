@@ -240,7 +240,7 @@ An `entrypoint.sh` (located at `.dev-tools/scripts/entrypoint.sh` which is copie
 
     Run your test suite in a fresh database with:
     ```bash
-    sudo docker exec -it odoo-server odoo test
+    sudo docker exec -it odoo-server odoo test --install-all
     ```
     This command will:
     1. Create a new temporary test database
