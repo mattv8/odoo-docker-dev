@@ -49,10 +49,24 @@ RUN apt update && apt install -y --no-install-recommends \
     python3-pip \
     python3-venv \
     wget \
-    wkhtmltopdf \
     xvfb \
+    # Dependencies for wkhtmltopdf
+    fontconfig \
+    libjpeg-turbo8 \
+    libssl3 \
+    libx11-6 \
+    libxcb1 \
+    libxext6 \
+    libxrender1 \
+    xfonts-75dpi \
+    xfonts-base \
     # Cleanup
     && apt clean && rm -rf /var/lib/apt/lists/*
+
+# Install wkhtmltopdf 0.12.6-1 with patched Qt (official release)
+RUN wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb -O /tmp/wkhtmltox.deb \
+    && dpkg -i /tmp/wkhtmltox.deb \
+    && rm /tmp/wkhtmltox.deb
 
 # Install Google Chrome (necessary for web tour tests)
 RUN echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
